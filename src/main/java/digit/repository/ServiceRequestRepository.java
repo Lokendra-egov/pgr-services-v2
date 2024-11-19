@@ -93,6 +93,13 @@ public class ServiceRequestRepository {
         return services;
     }
 
+    public Integer getCount(RequestSearchCriteria criteria) {
+        List<Object> preparedStmtList = new ArrayList<>();
+        String query = queryBuilder.getCountQuery(criteria, preparedStmtList);
+        Integer count =  jdbcTemplate.queryForObject(query, preparedStmtList.toArray(), Integer.class);
+        return count;
+    }
+
     public Map<String, Integer> fetchDynamicData(String tenantId) {
         List<Object> preparedStmtListCompalintsResolved = new ArrayList<>();
         String query = queryBuilder.getResolvedComplaints(tenantId,preparedStmtListCompalintsResolved );

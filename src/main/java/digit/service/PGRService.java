@@ -105,4 +105,10 @@ public class PGRService {
         producer.push(config.getUpdateTopic(),serviceRequest.getPgrEntity());
         return serviceRequest;
     }
+
+    public Integer count(RequestInfo requestInfo, RequestSearchCriteria criteria){
+        criteria.setIsPlainSearch(false);
+        Integer count = repository.getCount(criteria);
+        return count;
+    }
 }

@@ -70,4 +70,13 @@ public class RequestApiController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @RequestMapping(value="/_count", method = RequestMethod.POST)
+    public ResponseEntity<CountResponse> requestsCountPost(@javax.validation.Valid @RequestBody RequestInfoWrapper requestInfoWrapper,
+                                                           @javax.validation.Valid @ModelAttribute RequestSearchCriteria criteria) {
+        Integer count = pgrService.count(requestInfoWrapper.getRequestInfo(), criteria);
+        ResponseInfo responseInfo = responseInfoFactory.createResponseInfoFromRequestInfo(requestInfoWrapper.getRequestInfo(), true);
+        CountResponse response = CountResponse.builder().responseInfo(responseInfo).count(count).build();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
 }
