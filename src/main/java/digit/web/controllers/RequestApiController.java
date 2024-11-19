@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.egov.common.contract.response.ResponseInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,11 +30,7 @@ public class RequestApiController {
     @Autowired
     private PGRService pgrService;
 
-
-//    @Autowired
-//    public RequestApiController(PGRService pgrService) {
-//        this.pgrService = pgrService;
-//    }
+    private ResponseInfoFactory responseInfoFactory = new ResponseInfoFactory();
 
     @RequestMapping(value = "/_create", method = RequestMethod.POST)
     public ResponseEntity<ServiceWrapper> requestCreatePost(@Valid @RequestBody ServiceRequest serviceRequest) {
@@ -51,14 +48,26 @@ public class RequestApiController {
     public ResponseEntity<ServiceResponse> requestsSearchPost(@javax.validation.Valid @RequestBody RequestInfoWrapper requestInfoWrapper,
                                                               @javax.validation.Valid @ModelAttribute RequestSearchCriteria criteria) {
 
-        String tenantId = criteria.getTenantId();
-//        List<ServiceWrapper> serviceWrappers = pgrService.search(requestInfoWrapper.getRequestInfo(), criteria);
-//        Map<String,Integer> dynamicData = pgrService.getDynamicData(tenantId);
+        List<ServiceWrapper> serviceWrappers = pgrService.search(requestInfoWrapper.getRequestInfo(), criteria);
 
-//        ServiceResponse serviceResponse = ServiceResponse.builder().responseInfo(ResponseInfo.builder().status("success").build()).pgREntities(serviceWrappers).build();
-//        return new ResponseEntity<ServiceResponse>(serviceResponse, HttpStatus.OK);
-        return null;
+        // Build ServiceResponse
+        ServiceResponse serviceResponse = ServiceResponse.builder()
+                .responseInfo(responseInfoFactory.createResponseInfoFromRequestInfo(requestInfoWrapper.getRequestInfo(), true))
+                .pgREntities(serviceWrappers)
+                .build();
+        // Return ResponseEntity
+        return ResponseEntity.ok(serviceResponse);
+    }
 
+    @RequestMapping(value="/_update", method = RequestMethod.POST)
+    public ResponseEntity<ServiceWrapper> requestsUpdatePost(@Valid @RequestBody ServiceRequest serviceRequest) {
+        ServiceRequest enrichedReq = pgrService.update(serviceRequest);
+//        ServiceWrapper serviceWrapper = ServiceWrapper.builder().service(enrichedReq.getService()).workflow(enrichedReq.getWorkflow()).build();
+        ResponseInfo responseInfo = responseInfoFactory.createResponseInfoFromRequestInfo(serviceRequest.getRequestInfo(), true);
+
+        ServiceWrapper response = ServiceWrapper.builder().service(enrichedReq.getPgrEntity().getService()).workflow(enrichedReq.getPgrEntity().getWorkflow()).build();
+        response.setResponseInfo(responseInfo);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 }

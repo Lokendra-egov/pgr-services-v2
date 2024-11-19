@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import digit.web.models.RequestHeader;
 import digit.web.models.ServiceWrapper;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.egov.common.contract.request.RequestInfo;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -29,7 +30,7 @@ public class ServiceRequest {
 
     @JsonProperty("requestInfo")
     @Valid
-    private RequestHeader requestInfo = null;
+    private RequestInfo requestInfo = null;
 
     @JsonProperty("pgrEntity")
     @NotNull

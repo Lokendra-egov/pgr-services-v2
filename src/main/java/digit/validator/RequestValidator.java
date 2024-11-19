@@ -15,7 +15,16 @@ public class RequestValidator {
 
     private Configuration config;
 
+
+    public RequestValidator(Configuration config) {
+        this.config = config;
+    }
+
     public void validateOnCreate(ServiceRequest request, Object mdmsResponse) {
+
+    }
+
+    public void validateOnUpdate(ServiceRequest request, Object mdmsResponse) {
 
     }
 
@@ -35,10 +44,10 @@ public class RequestValidator {
 
     private void validateSearchParam(RequestInfo requestInfo, RequestSearchCriteria criteria){
 
-        if(requestInfo.getUserInfo().getType().equalsIgnoreCase("EMPLOYEE" ) && criteria.getIds().isEmpty())
+        if(requestInfo.getUserInfo().getType().equalsIgnoreCase("EMPLOYEE" ) && criteria.isEmpty())
             throw new CustomException("INVALID_SEARCH","Search without params is not allowed");
 
-        if(requestInfo.getUserInfo().getType().equalsIgnoreCase("EMPLOYEE") && criteria.getTenantId().split("\\.").length == 1){
+        if(requestInfo.getUserInfo().getType().equalsIgnoreCase("EMPLOYEE") && criteria.getTenantId().split("\\.").length == 0){
             throw new CustomException("INVALID_SEARCH", "Employees cannot perform state level searches.");
         }
 

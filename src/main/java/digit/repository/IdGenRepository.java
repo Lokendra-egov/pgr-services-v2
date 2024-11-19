@@ -22,8 +22,6 @@ import java.util.Map;
 @Repository
 public class IdGenRepository {
 
-
-
     private RestTemplate restTemplate;
 
     private Configuration config;
@@ -53,7 +51,4 @@ public class IdGenRepository {
         }
         return response;
     }
-
-
-
 }

@@ -1,18 +1,14 @@
 package digit.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import digit.config.Configuration;
-import digit.web.models.RequestHeader;
+import digit.repository.ServiceRequestRepository;
 import digit.web.models.ServiceRequest;
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import net.minidev.json.JSONArray;
 import org.egov.common.contract.request.RequestInfo;
 import org.egov.mdms.model.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -23,13 +19,17 @@ import static digit.config.ServiceConstants.*;
 public class MdmsUtil {
 
     @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
-    private ObjectMapper mapper;
-
-    @Autowired
     private Configuration configs;
+
+    @Autowired
+    private ServiceRequestRepository repository;
+
+
+    @Autowired
+    public MdmsUtil(Configuration configs, ServiceRequestRepository repository) {
+        this.configs = configs;
+        this.repository = repository;
+    }
 
 
 
@@ -40,23 +40,30 @@ public class MdmsUtil {
      * @return                 the response from the MDMS service
      */
     public Object mdmsCall(ServiceRequest serviceRequest) {
-        RequestHeader requestInfo = serviceRequest.getRequestInfo();
+
+        // get request info
+        RequestInfo requestInfo = serviceRequest.getRequestInfo();
+
+        // get tenant id
         String tenantId = serviceRequest.getPgrEntity().getService().getTenantId();
+
+        // get mdms search criteria
         MdmsCriteriaReq mdmsCriteriaReq = getMDMSRequest(requestInfo, tenantId);
-        Object response = new HashMap<>();
-        Integer rate = 0;
-        MdmsResponse mdmsResponse = new MdmsResponse();
-        try {
-            response = restTemplate.postForObject(configs.getMdmsHost() + configs.getMdmsEndPoint(), mdmsCriteriaReq, Map.class);
-            mdmsResponse = mapper.convertValue(response, MdmsResponse.class);
-        }catch(Exception e) {
-            log.error(ERROR_WHILE_FETCHING_FROM_MDMS,e);
-            return response;
-        }
-        return mdmsResponse.getMdmsRes();
+
+
+        Object mdmsResponse = repository.fetchResult(getMdmsSearchUrl(), mdmsCriteriaReq);
+
+        return mdmsResponse;
     }
 
-    public MdmsCriteriaReq getMDMSRequest(RequestHeader requestInfo,String tenantId){
+    /**
+     * Retrieves the MDMS request based on the provided request info and tenant ID.
+     *
+     * @param  requestInfo  the request header containing necessary information
+     * @param  tenantId     the ID of the tenant
+     * @return              the MDMS criteria request generated from the module details and tenant ID
+     */
+    public MdmsCriteriaReq getMDMSRequest(RequestInfo requestInfo, String tenantId){
         List<ModuleDetail> pgrModuleRequest = getPGRModuleRequest();
 
         List<ModuleDetail> moduleDetails = new LinkedList<>();
@@ -66,10 +73,15 @@ public class MdmsUtil {
                 .build();
 
         MdmsCriteriaReq mdmsCriteriaReq = MdmsCriteriaReq.builder().mdmsCriteria(mdmsCriteria)
-                .requestInfo(requestInfo.getRequestInfo()).build();
+                .requestInfo(requestInfo).build();
         return mdmsCriteriaReq;
     }
 
+    /**
+     * Retrieves the PGR module request details.
+     *
+     * @return         a list containing the PGR module details
+     */
     private List<ModuleDetail> getPGRModuleRequest() {
 
         // master details for TL module
@@ -88,6 +100,11 @@ public class MdmsUtil {
 
     }
 
+    /**
+     * Retrieves the MDMS search URL by appending the MDMS host and endpoint.
+     *
+     * @return         the MDMS search URL as a StringBuilder
+     */
     public StringBuilder getMdmsSearchUrl() {
         return new StringBuilder().append(configs.getMdmsHost()).append(configs.getMdmsEndPoint());
     }

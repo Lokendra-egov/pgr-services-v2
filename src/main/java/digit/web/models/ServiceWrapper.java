@@ -2,6 +2,7 @@ package digit.web.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
+import org.egov.common.contract.response.ResponseInfo;
 
 import javax.validation.Valid;
 
@@ -21,4 +22,7 @@ public class ServiceWrapper {
     @JsonProperty("workflow")
     private Workflow workflow = null;
 
+    public void setResponseInfo(ResponseInfo responseInfo) {
+
+    }
 }

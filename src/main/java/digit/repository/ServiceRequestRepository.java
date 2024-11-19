@@ -39,9 +39,12 @@ public class ServiceRequestRepository {
 
 
     @Autowired
-    public ServiceRequestRepository(ObjectMapper mapper, RestTemplate restTemplate) {
+    public ServiceRequestRepository(ObjectMapper mapper, RestTemplate restTemplate, PGRQueryBuilder queryBuilder, JdbcTemplate jdbcTemplate, PGRRowMapper rowMapper) {
         this.mapper = mapper;
         this.restTemplate = restTemplate;
+        this.queryBuilder = queryBuilder;
+        this.jdbcTemplate = jdbcTemplate;
+        this.rowMapper = rowMapper;
     }
 
 

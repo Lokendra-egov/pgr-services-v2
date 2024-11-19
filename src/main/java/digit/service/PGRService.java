@@ -33,64 +33,76 @@ public class PGRService {
 
     private ServiceRequestRepository repository;
 
-    public PGRService(RequestValidator validator, EnrichmentService enrichment, MdmsUtil mdmsUtils, WorkflowService workflowService, Producer producer, Configuration config) {
+    public PGRService(RequestValidator validator, EnrichmentService enrichment, MdmsUtil mdmsUtils, WorkflowService workflowService, Producer producer, Configuration config, ServiceRequestRepository repository) {
         this.validator = validator;
         this.enrichment = enrichment;
         this.mdmsUtils = mdmsUtils;
         this.workflowService = workflowService;
         this.producer = producer;
         this.config = config;
-
+        this.repository = repository;
     }
 
     public ServiceRequest create(ServiceRequest serviceRequest) {
-//        Object mdmsResponse = mdmsUtils.mdmsCall(serviceRequest);
-        Object mdmsResponse = null;
+
+        // get mdms response
+        Object mdmsResponse = mdmsUtils.mdmsCall(serviceRequest);
+
+        // validate the request
         validator.validateOnCreate(serviceRequest, mdmsResponse);
+
+        // enrich the request
         enrichment.enrichOnCreate(serviceRequest);
-//        workflowService.updateWorkflowStatus(serviceRequest);
-        producer.push(config.getCreateTopic(),serviceRequest.getPgrEntity());
+
+        // update the workflow
+        workflowService.updateWorkflowStatus(serviceRequest);
+
+        // push to kafka
+        producer.push(config.getCreateTopic(), serviceRequest.getPgrEntity());
         return serviceRequest;
     }
 
-    public List<ServiceWrapper> search(RequestInfo requestInfo, RequestSearchCriteria criteria){
+    public List<ServiceWrapper> search(RequestInfo requestInfo, RequestSearchCriteria criteria) {
         validator.validateOnSearch(requestInfo, criteria);
 
         enrichment.enrichOnSearch(requestInfo, criteria);
 
-        if(criteria.getIds().isEmpty() && criteria.getMobileNumber()==null && criteria.getServiceRequestId()==null)
+        if (criteria.isEmpty() && criteria.getServiceRequestId() == null)
             return new ArrayList<>();
 
 //        criteria.setIsPlainSearch(false);
 
         List<ServiceWrapper> serviceWrappers = repository.getServiceWrappers(criteria);
 
-        if(CollectionUtils.isEmpty(serviceWrappers))
-            return new ArrayList<>();;
+        if (CollectionUtils.isEmpty(serviceWrappers))
+            return new ArrayList<>();
+        ;
 
 //        userService.enrichUsers(serviceWrappers);
-        List<ServiceWrapper> enrichedServiceWrappers = workflowService.enrichWorkflow(requestInfo,serviceWrappers);
+        List<ServiceWrapper> enrichedServiceWrappers = workflowService.enrichWorkflow(requestInfo, serviceWrappers);
         Map<Long, List<ServiceWrapper>> sortedWrappers = new TreeMap<>(Collections.reverseOrder());
-        for(ServiceWrapper svc : enrichedServiceWrappers){
-            if(sortedWrappers.containsKey(svc.getService().getAuditDetails().getCreatedTime())){
+        for (ServiceWrapper svc : serviceWrappers) {
+            if (sortedWrappers.containsKey(svc.getService().getAuditDetails().getCreatedTime())) {
                 sortedWrappers.get(svc.getService().getAuditDetails().getCreatedTime()).add(svc);
-            }else{
+            } else {
                 List<ServiceWrapper> serviceWrapperList = new ArrayList<>();
                 serviceWrapperList.add(svc);
                 sortedWrappers.put(svc.getService().getAuditDetails().getCreatedTime(), serviceWrapperList);
             }
         }
         List<ServiceWrapper> sortedServiceWrappers = new ArrayList<>();
-        for(Long createdTimeDesc : sortedWrappers.keySet()){
+        for (Long createdTimeDesc : sortedWrappers.keySet()) {
             sortedServiceWrappers.addAll(sortedWrappers.get(createdTimeDesc));
         }
         return sortedServiceWrappers;
     }
 
-    public Map<String, Integer> getDynamicData(String tenantId) {
-
-        Map<String,Integer> dynamicData = repository.fetchDynamicData(tenantId);
-
-        return dynamicData;
+    public ServiceRequest update(ServiceRequest serviceRequest){
+        Object mdmsData = mdmsUtils.mdmsCall(serviceRequest);
+        validator.validateOnUpdate(serviceRequest, mdmsData);
+        enrichment.enrichOnUpdate(serviceRequest);
+        workflowService.updateWorkflowStatus(serviceRequest);
+        producer.push(config.getUpdateTopic(),serviceRequest.getPgrEntity());
+        return serviceRequest;
     }
 }

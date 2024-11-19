@@ -39,7 +39,7 @@ public class WorkflowService {
     public BusinessService getBusinessService(ServiceRequest serviceRequest) {
         String tenantId = serviceRequest.getPgrEntity().getService().getTenantId();
         StringBuilder url = getSearchURLWithParams(tenantId, PGR_BUSINESSSERVICE);
-        RequestInfoWrapper requestInfoWrapper = RequestInfoWrapper.builder().requestInfo(serviceRequest.getRequestInfo().getRequestInfo()).build();
+        RequestInfoWrapper requestInfoWrapper = RequestInfoWrapper.builder().requestInfo(serviceRequest.getRequestInfo()).build();
         Object result = repository.fetchResult(url, requestInfoWrapper);
         BusinessServiceResponse response = null;
         try {
@@ -56,7 +56,7 @@ public class WorkflowService {
 
     public String updateWorkflowStatus(ServiceRequest serviceRequest) {
         ProcessInstance processInstance = getProcessInstanceForPGR(serviceRequest);
-        ProcessInstanceRequest workflowRequest = new ProcessInstanceRequest(serviceRequest.getRequestInfo().getRequestInfo(), Collections.singletonList(processInstance));
+        ProcessInstanceRequest workflowRequest = new ProcessInstanceRequest(serviceRequest.getRequestInfo(), Collections.singletonList(processInstance));
         State state = callWorkFlow(workflowRequest);
         serviceRequest.getPgrEntity().getService().setApplicationStatus(state.getApplicationStatus());
         return state.getApplicationStatus();
